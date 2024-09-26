@@ -4470,6 +4470,8 @@ fn writeSyntheticSections(self: *Elf) !void {
     }
 
     if (self.rela_dyn_section_index) |shndx| {
+        // TODO: would state tracking be more appropriate here? perhaps even custom relocation type?
+        self.rela_dyn.clearRetainingCapacity();
         const shdr = slice.items(.shdr)[shndx];
         try self.got.addRela(self);
         try self.copy_rel.addRela(self);
@@ -4502,6 +4504,8 @@ fn writeSyntheticSections(self: *Elf) !void {
     }
 
     if (self.rela_plt_section_index) |shndx| {
+        // TODO: would state tracking be more appropriate here? perhaps even custom relocation type?
+        self.rela_plt.clearRetainingCapacity();
         const shdr = slice.items(.shdr)[shndx];
         try self.plt.addRela(self);
         try self.base.file.?.pwriteAll(mem.sliceAsBytes(self.rela_plt.items), shdr.sh_offset);
