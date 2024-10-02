@@ -1062,6 +1062,9 @@ pub fn flushModule(self: *Elf, arena: Allocator, tid: Zcu.PerThread.Id, prog_nod
     for (self.objects.items) |index| {
         self.file(index).?.object.dirty = false;
     }
+    // TODO: would state tracking be more appropriate here? perhaps even custom relocation type?
+    self.rela_dyn.clearRetainingCapacity();
+    self.rela_plt.clearRetainingCapacity();
 
     if (self.zigObjectPtr()) |zo| {
         var has_reloc_errors = false;
@@ -1092,6 +1095,7 @@ pub fn flushModule(self: *Elf, arena: Allocator, tid: Zcu.PerThread.Id, prog_nod
     try self.writeShdrTable();
     try self.writeAtoms();
     try self.writeMergeSections();
+
     self.writeSyntheticSections() catch |err| switch (err) {
         error.RelocFailure => return error.FlushFailure,
         error.UnsupportedCpuArch => {
@@ -4445,8 +4449,6 @@ fn writeSyntheticSections(self: *Elf) !void {
     }
 
     if (self.rela_dyn_section_index) |shndx| {
-        // TODO: would state tracking be more appropriate here? perhaps even custom relocation type?
-        self.rela_dyn.clearRetainingCapacity();
         const shdr = slice.items(.shdr)[shndx];
         try self.got.addRela(self);
         try self.copy_rel.addRela(self);
@@ -4479,8 +4481,6 @@ fn writeSyntheticSections(self: *Elf) !void {
     }
 
     if (self.rela_plt_section_index) |shndx| {
-        // TODO: would state tracking be more appropriate here? perhaps even custom relocation type?
-        self.rela_plt.clearRetainingCapacity();
         const shdr = slice.items(.shdr)[shndx];
         try self.plt.addRela(self);
         try self.base.file.?.pwriteAll(mem.sliceAsBytes(self.rela_plt.items), shdr.sh_offset);
